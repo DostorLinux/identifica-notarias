@@ -1,0 +1,13 @@
+cmake
+dlib
+face-recognition
+numpy
+uwsgi
+flask
+pyyaml
+zeep
+yagmail
+keyring
+tensorflow
+opencv-python
+passporteye
