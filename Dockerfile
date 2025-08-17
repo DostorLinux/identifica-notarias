@@ -18,7 +18,7 @@ RUN apt-get update && apt-get -y upgrade && apt-get -y install php-curl python3.
     php composer-setup.php --install-dir=/usr/local/bin --filename=composer && \
     chmod +x /usr/local/bin/composer && apt autoclean
 
-WORKDIR /var/www/html/gate/
+WORKDIR /var/www/html/gate/common
 RUN composer update && composer install && composer require phpmailer/phpmailer && \
     composer require lcobucci/jwt && composer require tecnickcom/tcpdf && mkdir -p /opt/face_match/faces && chown -R www-data /opt/*
 
