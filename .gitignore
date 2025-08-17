@@ -1,0 +1,13 @@
+.idea
+**/.DS_Store
+**/docs/build/
+/gate/api/test/include/localconfig.php
+
+*.csv
+/
+
+
+/gate/portal/front_angular/detect/node_modules/
+/gate/portal/front_angular/detect/.angular/
+/gate/portal/front_angular/detectlite/node_modules/
+/gate/portal/front_angular/detectlite/.angular/

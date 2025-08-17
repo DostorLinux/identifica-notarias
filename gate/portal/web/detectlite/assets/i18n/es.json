@@ -1,0 +1,39 @@
+{
+  "registerEnter": "Verificar identidad",
+  "registerExit": "Marcar Salida",
+  "loading": "Cargando...",
+  "titlePinPad": "Ingresa tu Rut",
+  "titleQR": "Escanee el código QR de su carnet de identidad",
+  "registerloading":{
+    "exit":"Registrando evento de Salida",
+    "enter":"Registrando evento de Entrada"
+  },
+  "confirmpopup":{
+    "title": "Confirmación de Identidad",
+    "subtitle": "Hemos detectado el usuario:",
+    "accept": "Correcto, soy Yo",
+    "reject": "No, es un error"
+  },
+  "errors": {
+    "CANNOT_IDENTIFY": "No se pudo reconocer su rostro<br />Intente nuevamente por favor",
+    "EMPTY_IMAGE": "La imagen no pudo ser enviada<br />Intente nuevamente por favor",
+    "INVALID_BASE64_IMAGE": "La imagen no pudo ser codificada en su navegador<br />Intente nuevamente por favor",
+    "TOO_MANY_FACES": "Se ha detectado más de un rostro en la cámara<br />Intente nuevamente por favor",
+    "NO_FACE_DETECTED": "No se ha detectado ningún rostro en la cámara<br />Intente nuevamente por favor",
+    "OTHER": "Error desconocido <br/> Intente nuevamente por favor",
+    "NO_MATCHING_AREAS": "Area de marcación no permitida<br />Intente nuevamente por favor",
+    "NO_GPS": "No se pudo obtener la ubicación<br />Por favor validar el GPS del dispositivo e intente nuevamente",
+    "INVALID_VEHICLE": "Vehículo no válido<br />Por favor intente nuevamente",
+    "VEHICLE_DENIED": "Vehículo no permitido<br />Por favor intente nuevamente"
+  },
+  "successScreen": {
+    "titleExit": "Salida Registrada",
+    "titleEnter": "Bienvenido",
+    "subtitle": "Marca registrada exitosamente",
+    "buttonBack": "Volver"
+  },
+  "errorScreen": {
+    "title": "ERROR",
+    "buttonBack": "Volver"
+  }
+}

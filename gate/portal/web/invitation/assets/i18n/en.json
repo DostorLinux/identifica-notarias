@@ -1,0 +1,42 @@
+{
+
+  "registerEnter": "Clock In",
+  "registerExit": "Clock Out",
+  "loading": "Loading...",
+  "titlePinPad": "Enter your Registration Number",
+  "titleQR": "Scan the QR code ",
+  "registerloading":{
+    "exit": "Logging Clock Out",
+    "enter": "Logging Clock In"
+  },
+  "confirmpopup": {
+    "title": "Identity Confirmation",
+    "subtitle": "We have detected the user:",
+    "accept": "Right, it's Me",
+    "reject": "No, it's a mistake"
+  },
+  "errors": {
+    "CANNOT_IDENTIFY": "Your face could not be recognized<br />Please try again",
+    "EMPTY_IMAGE": "Image could not be sent<br />Please try again",
+    "INVALID_BASE64_IMAGE": "The image could not be encoded in your browser<br />Please try again",
+    "TOO_MANY_FACES": "More than one face detected on camera<br />Please try again",
+    "NO_FACE_DETECTED": "No face detected on camera<br />Please try again",
+    "OTHER": "Unknown <br/> error Please try again",
+    "NO_MATCHING_AREAS": "Entry area not allowed<br />Please try again",
+    "NO_GPS": "GPS not available<br />Please check the GPS settings of your device and try again",
+    "INVALID_VEHICLE": "Invalid vehicle<br />Please try again",
+    "VEHICLE_DENIED": "Vehicle not allowed<br />Please try again"
+
+  },
+  "successScreen": {
+    "titleExit": "Goodbye",
+    "titleEnter": "Welcome",
+    "subtitle": "Successful trademark",
+    "buttonBack": "Return"
+  },
+  "errorScreen": {
+    "title": "ERROR",
+    "buttonBack": "Return"
+  }
+
+}

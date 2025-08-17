@@ -1,0 +1,9 @@
+database:
+    host: mysql-identifica
+    name: test
+    username: root
+    password: gate
+api-server: http://slep-api.identifica.ai/api/v1/
+images-directory: images
+api-user: admin
+api-pass: gate.2020

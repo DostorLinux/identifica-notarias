@@ -1,0 +1,9 @@
+{
+  "subdomain": "your-subdomain-here",
+  "username": "your-username-here",
+  "password": "your-password-here",
+  "apiKey": "your-api-key-here",
+  "deviceId": "your-device-id-here",
+  "environment": "production",
+  "version": "2.0.0"
+}

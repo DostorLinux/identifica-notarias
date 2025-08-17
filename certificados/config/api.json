@@ -1,0 +1,17 @@
+{
+  "gate": {
+    "baseUrl": "https://access-control-test.identifica.ai",
+    "endpoints": {
+      "login": "/services/login.php",
+      "ping": "/services/ping.php",
+      "pingAuth": "/services/ping_auth.php",
+      "postEvent": "/detect/services/postEvent.php"
+    },
+    "timeout": 10000
+  },
+  "auth": {
+    "tokenKey": "gate_auth_token",
+    "userKey": "gate_user_info",
+    "tokenExpiration": 3600000
+  }
+}

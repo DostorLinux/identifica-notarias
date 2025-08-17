@@ -1,0 +1,9 @@
+{
+  "subdomain": "api.tu-dominio-produccion.com",
+  "username": "admin",
+  "password": "tu-password-seguro",
+  "defaultSettings": {
+    "timeout": 10000,
+    "retries": 3
+  }
+}

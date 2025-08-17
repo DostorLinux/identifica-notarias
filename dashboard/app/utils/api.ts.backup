@@ -1,0 +1,124 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const API_BASE_URL = 'https://your-api-domain.com/api/v1'; // Cambiar por la URL real
+
+interface ApiResponse<T = any> {
+  data?: T;
+  error?: string;
+  code?: string;
+  [key: string]: any;
+}
+
+export async function apiCall<T = any>(
+  endpoint: string,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
+  data?: any,
+  useAuth: boolean = true
+): Promise<ApiResponse<T>> {
+  try {
+    const url = `${API_BASE_URL}${endpoint}`;
+    
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+    };
+
+    // Add authorization header if needed
+    if (useAuth) {
+      const token = await AsyncStorage.getItem('authToken');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
+    const config: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (method !== 'GET' && data) {
+      config.body = JSON.stringify(data);
+    }
+
+    const response = await fetch(url, config);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    
+    // Check if the API returned an error
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('API call error:', error);
+    throw error;
+  }
+}
+
+export async function login(username: string, password: string): Promise<{ token: string; user: any }> {
+  try {
+    const credentials = btoa(`${username}:${password}`);
+    
+    const response = await fetch(`${API_BASE_URL}/login`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${credentials}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Invalid credentials');
+    }
+
+    const result = await response.json();
+    
+    if (result.error) {
+      throw new Error(result.error);
+    }
+
+    // Store the token
+    if (result.token) {
+      await AsyncStorage.setItem('authToken', result.token);
+      await AsyncStorage.setItem('user', JSON.stringify(result.user));
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
+}
+
+export async function logout(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem('authToken');
+    await AsyncStorage.removeItem('user');
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+}
+
+export async function getCurrentUser(): Promise<any | null> {
+  try {
+    const userString = await AsyncStorage.getItem('user');
+    return userString ? JSON.parse(userString) : null;
+  } catch (error) {
+    console.error('Get current user error:', error);
+    return null;
+  }
+}
+
+export async function isAuthenticated(): Promise<boolean> {
+  try {
+    const token = await AsyncStorage.getItem('authToken');
+    return !!token;
+  } catch (error) {
+    console.error('Check authentication error:', error);
+    return false;
+  }
+}

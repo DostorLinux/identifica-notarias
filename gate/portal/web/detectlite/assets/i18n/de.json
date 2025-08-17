@@ -1,0 +1,43 @@
+{
+    "registerEnter": "Stempeln",
+    "registerExit": "Ausstempeln",
+    "loading": "Laden...",
+
+    "titlePinPad": " Geben Sie Ihre ID ein",
+    "titleQR": "Scannen Sie den QR-Code",
+    "registerloading": {
+      "exit": "Abmelden der Uhr",
+      "enter": "Einloggen der Uhr"
+    },
+    "confirmpopup": {
+      "title": "Identitätsbestätigung",
+      "subtitle": "Wir haben den Benutzer erkannt:",
+      "accept": "Richtig, ich bin es",
+      "reject": "Nein, das ist ein Fehler"
+  },
+
+  "errors": {
+    "CANNOT_IDENTIFY": "Ihr Gesicht konnte nicht erkannt werden<br />Bitte versuchen Sie es erneut.",
+    "EMPTY_IMAGE": "Bild konnte nicht gesendet werden<br />Bitte versuchen Sie es erneut",
+    "INVALID_BASE64_IMAGE": "Das Bild konnte in Ihrem Browser nicht kodiert werden<br />Bitte versuchen Sie es erneut.",
+    "TOO_MANY_FACES": "Mehr als ein Gesicht auf der Kamera erkannt<br />Bitte versuchen Sie es erneut",
+    "NO_FACE_DETECTED": "Kein Gesicht auf der Kamera erkannt<br />Bitte versuchen Sie es erneut",
+    "OTHER": "Unbekannter <br/> Fehler Bitte versuchen Sie es erneut.",
+    "NO_MATCHING_AREAS": "Eintrittsbereich nicht gestattet<br />Bitte versuchen Sie es erneut.",
+    "NO_GPS": "GPS nicht verfügbar<br />Bitte überprüfen Sie die GPS-Einstellungen Ihres Geräts und versuchen Sie es erneut",
+    "INVALID_VEHICLE": "Fahrzeug nicht erkannt<br />Bitte versuchen Sie es erneut.",
+    "VEHICLE_DENIED": "Fahrzeug nicht gestattet<br />Bitte versuchen Sie es erneut."
+
+  },
+  "successScreen": {
+    "titleExit": "Auf Wiedersehen",
+    "titleEnter": "Willkommen",
+    "subtitle": "Erfolgreiche Marke",
+    "buttonBack": "Rückgabe"
+  },
+  "errorScreen": {
+    "title": "FEHLER",
+    "buttonBack": "Rückgabe"
+  }
+
+}
