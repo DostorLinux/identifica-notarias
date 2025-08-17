@@ -2,7 +2,7 @@
 FROM dostorlinux/identifica-base:stable
 
 COPY gate/ /var/www/html/gate
-COPY dashboard /var/www/html/dashboard
+COPY dist/* /var/www/html/web/
 COPY api.conf /etc/apache2/sites-enabled/api.conf
 COPY portal.conf /etc/apache2/sites-enabled/portal.conf
 COPY requirements.txt /root/
@@ -21,6 +21,8 @@ RUN apt-get update && apt-get -y upgrade && apt-get -y install php-curl python3.
 WORKDIR /var/www/html/gate/common
 RUN composer update && composer install && composer require phpmailer/phpmailer && \
     composer require lcobucci/jwt && composer require tecnickcom/tcpdf && mkdir -p /opt/face_match/faces && chown -R www-data /opt/*
+
+
 
 #WORKDIR /var/www/html/gate/portal/front_angular/configIdentifica
 #RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
