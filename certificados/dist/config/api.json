@@ -1,0 +1,9 @@
+{
+  "subdomain": "access-control-test.identifica.ai",
+  "username": "admin",
+  "password": "admin123",
+  "defaultSettings": {
+    "timeout": 10000,
+    "retries": 3
+  }
+}
