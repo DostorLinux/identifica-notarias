@@ -24,6 +24,8 @@ RUN composer update && composer install && composer require phpmailer/phpmailer 
 
 
 
+WORKDIR /var/www/html/
+RUN cp -r dist/* /var/www/html/web/
 #WORKDIR /var/www/html/gate/portal/front_angular/configIdentifica
 #RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
 #RUN apt-get update && apt-get install -y nodejs && npm install
