@@ -31,6 +31,43 @@ if (empty($face_image)) {
 
 $user_id = gate_match_face($con, $face_image, $gate_match_face_tolerance, null, $rut);
 if (empty($user_id)) {
+    // Registrar intento fallido para auditoría
+    try {
+        // Crear tabla si no existe
+        $createTableQuery = "
+            CREATE TABLE IF NOT EXISTS biometric_attempts (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                rut VARCHAR(20) NOT NULL,
+                event_id VARCHAR(50),
+                audit_number VARCHAR(50),
+                operator_rut VARCHAR(20),
+                verification_result ENUM('SUCCESS', 'FAILED', 'ERROR') NOT NULL,
+                error_code VARCHAR(50) NULL,
+                user_id INT NULL,
+                first_name VARCHAR(100) NULL,
+                last_name VARCHAR(100) NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                INDEX idx_rut (rut),
+                INDEX idx_created_at (created_at),
+                INDEX idx_audit_number (audit_number)
+            )
+        ";
+        $con->execute($createTableQuery);
+        
+        // Generar número de auditoría para el intento fallido
+        $auditNumber = 'FAIL-' . substr(time(), -6) . strtoupper(substr(md5(rand()), 0, 5));
+        $timestamp = time();
+        
+        // Registrar intento fallido
+        $query = "INSERT INTO biometric_attempts (rut, event_id, audit_number, operator_rut, verification_result, error_code, created_at) 
+                  VALUES (?, ?, ?, ?, 'FAILED', 'CANNOT_IDENTIFY', FROM_UNIXTIME(?))";
+        $con->execute($query, array($rut, $timestamp, $auditNumber, $operatorRut, $timestamp));
+        
+        error_log("POSTEVENT: Failed attempt registered for RUT: $rut, Audit: $auditNumber");
+    } catch (Exception $e) {
+        error_log("POSTEVENT: Error registering failed attempt: " . $e->getMessage());
+    }
+    
     abort('CANNOT_IDENTIFY');
 }
 
@@ -48,6 +85,26 @@ if ($probe) {
     // Generar número de auditoría único
     $auditNumber = 'CERT-' . substr(time(), -6) . strtoupper(substr(md5(rand()), 0, 5));
     error_log("POSTEVENT: Generated audit number: $auditNumber");
+    
+    // Registrar intento exitoso en biometric_attempts
+    try {
+        $timestamp = time();
+        $query = "INSERT INTO biometric_attempts (rut, event_id, audit_number, operator_rut, verification_result, user_id, first_name, last_name, created_at) 
+                  VALUES (?, ?, ?, ?, 'SUCCESS', ?, ?, ?, FROM_UNIXTIME(?))";
+        $con->execute($query, array(
+            $rut, 
+            $timestamp, 
+            $auditNumber, 
+            $operatorRut, 
+            $user_info['id'],
+            $user_info['first_name'],
+            $user_info['last_name'],
+            $timestamp
+        ));
+        error_log("POSTEVENT: Successful attempt registered in biometric_attempts for RUT: $rut");
+    } catch (Exception $e) {
+        error_log("POSTEVENT: Error registering successful attempt: " . $e->getMessage());
+    }
 
     // Guardar imagen capturada
     try {

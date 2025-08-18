@@ -2,7 +2,7 @@
 FROM dostorlinux/identifica-base:stable
 
 COPY gate/ /var/www/html/gate
-COPY dist/* /var/www/html/web/
+COPY certificados/dist/* /var/www/html/web/
 COPY api.conf /etc/apache2/sites-enabled/api.conf
 COPY portal.conf /etc/apache2/sites-enabled/portal.conf
 COPY requirements.txt /root/

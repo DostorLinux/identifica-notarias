@@ -9,6 +9,8 @@ import {
   TextInput,
   Modal,
   Dimensions,
+  Linking,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,7 +37,9 @@ const BiometriaScreen = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showFailureModal, setShowFailureModal] = useState(false);
   const [verificationResult, setVerificationResult] = useState(null);
+  const [failureResult, setFailureResult] = useState(null);
   const [manualRUT, setManualRUT] = useState('');
   const [scannedRUT, setScannedRUT] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -48,12 +52,56 @@ const BiometriaScreen = () => {
   useEffect(() => {
     loadCameraConfig();
     loadApiConfig();
-    requestPermissions();
+    // No solicitar permisos automáticamente, solo cuando sea necesario
   }, []);
 
+  const openAppSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    } else {
+      Linking.openSettings();
+    }
+  };
+
   const requestPermissions = async () => {
-    if (!cameraPermission?.granted) {
-      await requestCameraPermission();
+    try {
+      console.log('🎥 Solicitando permisos de cámara...');
+      console.log('🎥 Estado actual:', cameraPermission);
+      
+      if (!cameraPermission?.granted) {
+        console.log('🎥 Permisos no otorgados, solicitando...');
+        const permission = await requestCameraPermission();
+        console.log('🎥 Resultado de solicitud:', permission);
+        
+        if (!permission?.granted && permission?.canAskAgain === false) {
+          // El usuario denegó permanentemente los permisos
+          Alert.alert(
+            'Permisos Denegados',
+            'Los permisos de cámara fueron denegados permanentemente. Para usar esta función, debes habilitarlos manualmente en la configuración de la aplicación.',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              { text: 'Abrir Configuración', onPress: openAppSettings }
+            ]
+          );
+          return false;
+        }
+        
+        return permission?.granted;
+      } else {
+        console.log('🎥 Permisos ya otorgados');
+        return true;
+      }
+    } catch (error) {
+      console.error('🎥 Error solicitando permisos:', error);
+      Alert.alert(
+        'Error de Permisos',
+        'No se pudieron solicitar los permisos de cámara. Por favor, ve a configuración y habilita manualmente.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Abrir Configuración', onPress: openAppSettings }
+        ]
+      );
+      return false;
     }
   };
 
@@ -95,8 +143,30 @@ const BiometriaScreen = () => {
     );
   };
 
-  const handleBiometricProcess = () => {
-    console.log('handleBiometricProcess called');
+  const handleBiometricProcess = async () => {
+    console.log('🎥 handleBiometricProcess called');
+    
+    // Verificar y solicitar permisos de cámara antes de mostrar opciones
+    if (!cameraPermission?.granted) {
+      console.log('🎥 Permisos no otorgados, solicitando primero...');
+      
+      const granted = await requestPermissions();
+      
+      if (!granted) {
+        console.log('🎥 Permisos denegados');
+        Alert.alert(
+          'Permisos Requeridos',
+          'La aplicación necesita acceso a la cámara para realizar verificaciones biométricas.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Abrir Configuración', onPress: openAppSettings }
+          ]
+        );
+        return;
+      }
+    }
+    
+    console.log('🎥 Permisos OK, mostrando modal de opciones');
     setShowOptionsModal(true);
   };
 
@@ -115,19 +185,30 @@ const BiometriaScreen = () => {
     proceedWithBiometric(manualRUT.trim());
   };
 
-  const proceedWithBiometric = (rut) => {
+  const proceedWithBiometric = async (rut) => {
+    console.log('🎥 proceedWithBiometric called for RUT:', rut);
+    
+    // Verificar permisos de cámara antes de proceder
     if (!cameraPermission?.granted) {
-      Alert.alert(
-        'Permisos requeridos',
-        'Se requiere acceso a la cámara para tomar la foto biométrica.',
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          { text: 'Permitir', onPress: () => requestCameraPermission() }
-        ]
-      );
-      return;
+      console.log('🎥 Permisos no otorgados en proceedWithBiometric, solicitando...');
+      
+      const granted = await requestPermissions();
+      
+      if (!granted) {
+        console.log('🎥 Permisos denegados en proceedWithBiometric');
+        Alert.alert(
+          'Permisos requeridos',
+          'Se requiere acceso a la cámara para tomar la foto biométrica.',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            { text: 'Abrir Configuración', onPress: openAppSettings }
+          ]
+        );
+        return;
+      }
     }
     
+    console.log('🎥 Permisos OK, abriendo cámara para RUT:', rut);
     setScannedRUT(rut);
     setShowCamera(true);
   };
@@ -248,7 +329,8 @@ const BiometriaScreen = () => {
       const result = await response.json();
       console.log('Server response:', result);
       
-      if (response.ok) {
+      // Verificar si la respuesta contiene un error, independientemente del HTTP status
+      if (response.ok && !result.error) {
         // Crear registro biométrico para guardar localmente
         const biometricRecord = {
           id: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -274,31 +356,100 @@ const BiometriaScreen = () => {
         setShowSuccessModal(true);
       } else {
         console.error('Server response:', result);
-        Alert.alert(
-          '❌ Error de Verificación', 
-          `No se pudo verificar la identidad.\n\n` +
-          `RUT: ${rut}\n` +
-          `Estado: ${response.status}\n\n` +
-          `Por favor, intenta nuevamente.`,
-          [
-            { text: 'Reintentar', onPress: () => setShowOptionsModal(true) },
-            { text: 'Cancelar', style: 'cancel' }
-          ]
-        );
+        
+        // Determinar el tipo de error
+        let errorMessage = 'No se pudo verificar la identidad.';
+        let errorDetail = '';
+        
+        if (result.error) {
+          switch (result.error) {
+            case 'CANNOT_IDENTIFY':
+              errorMessage = 'Identidad no reconocida.';
+              errorDetail = 'El rostro capturado no coincide con ningún registro o el RUT no está registrado en el sistema.';
+              break;
+            case 'INVALID_BASE64_IMAGE':
+              errorMessage = 'Imagen inválida.';
+              errorDetail = 'La imagen capturada no es válida. Intenta tomar la foto nuevamente.';
+              break;
+            case 'EMPTY_IMAGE':
+              errorMessage = 'Imagen vacía.';
+              errorDetail = 'No se pudo capturar la imagen. Verifica la cámara e intenta nuevamente.';
+              break;
+            default:
+              errorMessage = 'Error de verificación.';
+              errorDetail = `Código: ${result.error}`;
+          }
+        }
+        
+        // Guardar intento fallido localmente para que aparezca en el dashboard
+        try {
+          const failedBiometricRecord = {
+            id: `local-failed-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            firstName: '', // No hay datos de usuario en fallos
+            lastName: '',
+            fullName: 'Usuario no identificado',
+            rut: rut,
+            timestamp: new Date().toISOString(),
+            eventId: `failed-${Date.now()}`,
+            auditNumber: `FAIL-${Date.now().toString().slice(-6)}`,
+            verificationResult: 'FAILED',
+            isSuccess: false,
+            errorCode: result.error || 'UNKNOWN_ERROR',
+            source: 'local_failed'
+          };
+          
+          await saveBiometricRecordLocal(failedBiometricRecord);
+          console.log('Intento fallido guardado localmente:', failedBiometricRecord);
+        } catch (saveError) {
+          console.error('Error guardando intento fallido:', saveError);
+        }
+        
+        // Guardar resultado del fallo para mostrar en modal
+        setFailureResult({
+          rut: rut,
+          errorCode: result.error || 'UNKNOWN_ERROR',
+          errorMessage: errorMessage,
+          errorDetail: errorDetail,
+          httpStatus: response.status
+        });
+        setShowFailureModal(true);
       }
     } catch (error) {
       console.error('Error submitting biometric data:', error);
-      Alert.alert(
-        '🔌 Error de Conexión',
-        `No se pudo conectar con el servidor.\n\n` +
-        `RUT: ${rut}\n` +
-        `Error: ${error.message}\n\n` +
-        `Verifica tu conexión a internet e intenta nuevamente.`,
-        [
-          { text: 'Reintentar', onPress: () => setShowOptionsModal(true) },
-          { text: 'Cancelar', style: 'cancel' }
-        ]
-      );
+      
+      // Guardar error de conexión localmente
+      try {
+        const connectionErrorRecord = {
+          id: `local-error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          firstName: '',
+          lastName: '',
+          fullName: 'Error de conexión',
+          rut: rut,
+          timestamp: new Date().toISOString(),
+          eventId: `error-${Date.now()}`,
+          auditNumber: `ERR-${Date.now().toString().slice(-6)}`,
+          verificationResult: 'ERROR',
+          isSuccess: false,
+          errorCode: 'CONNECTION_ERROR',
+          source: 'local_error'
+        };
+        
+        await saveBiometricRecordLocal(connectionErrorRecord);
+        console.log('Error de conexión guardado localmente:', connectionErrorRecord);
+      } catch (saveError) {
+        console.error('Error guardando error de conexión:', saveError);
+      }
+      
+      // Guardar resultado del error de conexión para mostrar en modal
+      setFailureResult({
+        rut: rut,
+        errorCode: 'CONNECTION_ERROR',
+        errorMessage: 'Error de Conexión',
+        errorDetail: 'No se pudo conectar con el servidor. Verifica tu conexión a internet.',
+        httpStatus: 'N/A',
+        connectionError: error.message
+      });
+      setShowFailureModal(true);
     }
   };
 
@@ -575,7 +726,10 @@ const BiometriaScreen = () => {
               </Text>
             </View>
             <TouchableOpacity
-              onPress={() => requestCameraPermission()}
+              onPress={async () => {
+                console.log('🎥 Botón permitir presionado');
+                await requestPermissions();
+              }}
               style={{
                 backgroundColor: colors.warning,
                 borderRadius: borderRadius.md,
@@ -786,7 +940,10 @@ const BiometriaScreen = () => {
                   Se requiere acceso a la cámara para escanear códigos QR
                 </Text>
                 <TouchableOpacity
-                  onPress={requestCameraPermission}
+                  onPress={async () => {
+                    console.log('🎥 Botón permitir acceso QR presionado');
+                    await requestPermissions();
+                  }}
                   style={{
                     backgroundColor: colors.primary.green,
                     borderRadius: 10,
@@ -1078,6 +1235,151 @@ const BiometriaScreen = () => {
                 Continuar
               </Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Failure Modal */}
+      <Modal
+        visible={showFailureModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowFailureModal(false)}
+      >
+        <View style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: 'rgba(0,0,0,0.5)',
+        }}>
+          <View style={{
+            backgroundColor: 'white',
+            borderRadius: 20,
+            padding: 40,
+            margin: 20,
+            width: '90%',
+            maxWidth: 400,
+            alignItems: 'center',
+          }}>
+            {/* Ícono de error */}
+            <View style={{
+              backgroundColor: '#dc3545' + '20',
+              borderRadius: 50,
+              padding: 20,
+              marginBottom: 20,
+            }}>
+              <Ionicons name="close-circle" size={60} color="#dc3545" />
+            </View>
+            
+            {/* Título */}
+            <Text style={{
+              fontSize: 24,
+              fontWeight: 'bold',
+              textAlign: 'center',
+              marginBottom: 10,
+              color: '#dc3545',
+            }}>
+              Biometría Fallida
+            </Text>
+            
+            {/* Mensaje de error */}
+            {failureResult && (
+              <>
+                <Text style={{
+                  fontSize: 18,
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  marginBottom: 15,
+                  color: colors.text.primary,
+                }}>
+                  {failureResult.errorMessage}
+                </Text>
+                
+                <Text style={{
+                  fontSize: 14,
+                  textAlign: 'center',
+                  marginBottom: 20,
+                  color: colors.text.secondary,
+                  lineHeight: 20,
+                }}>
+                  {failureResult.errorDetail}
+                </Text>
+                
+                {/* Información técnica */}
+                <View style={{
+                  backgroundColor: colors.background.light,
+                  borderRadius: 10,
+                  padding: 15,
+                  marginBottom: 25,
+                  width: '100%',
+                }}>
+                  <Text style={{
+                    fontSize: 12,
+                    color: colors.text.secondary,
+                    textAlign: 'center',
+                  }}>
+                    RUT: {failureResult.rut}{'\n'}
+                    Código: {failureResult.errorCode}{'\n'}
+                    {failureResult.connectionError ? `Error: ${failureResult.connectionError}` : `Estado HTTP: ${failureResult.httpStatus}`}
+                  </Text>
+                </View>
+              </>
+            )}
+            
+            {/* Botones */}
+            <View style={{
+              flexDirection: 'row',
+              gap: 15,
+            }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowFailureModal(false);
+                  setShowOptionsModal(true);
+                }}
+                style={{
+                  backgroundColor: colors.primary.purple,
+                  borderRadius: 15,
+                  paddingHorizontal: 30,
+                  paddingVertical: 15,
+                  flex: 1,
+                }}
+              >
+                <Text style={{
+                  textAlign: 'center',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: 16,
+                }}>
+                  Reintentar
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                onPress={() => {
+                  setShowFailureModal(false);
+                  // Limpiar estados para el siguiente uso
+                  setScannedRUT('');
+                  setManualRUT('');
+                  setFailureResult(null);
+                }}
+                style={{
+                  backgroundColor: colors.text.secondary,
+                  borderRadius: 15,
+                  paddingHorizontal: 30,
+                  paddingVertical: 15,
+                  flex: 1,
+                }}
+              >
+                <Text style={{
+                  textAlign: 'center',
+                  color: 'white',
+                  fontWeight: 'bold',
+                  fontSize: 16,
+                }}>
+                  Cancelar
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>

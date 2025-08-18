@@ -144,7 +144,8 @@ const CertificadosScreen = () => {
       
       // Lista de servicios para probar en orden
       const serviceUrls = [
-        `${baseUrl}/detect/services/getBiometricRecords.php`,  // Servicio principal (corregido)
+        `${baseUrl}/detect/services/getBiometricRecordsFixed.php`,  // Servicio mejorado que incluye fallos
+        `${baseUrl}/detect/services/getBiometricRecords.php`,  // Servicio principal (solo exitosos)
         `${baseUrl}/detect/services/getBiometricRecordsWorking.php`, // Servicio que funciona
         `${baseUrl}/detect/services/mockBiometricRecords.php`, // Datos de prueba
       ];
@@ -417,16 +418,24 @@ const CertificadosScreen = () => {
       console.log('🃏 BiometricRecordCard recibió item:', JSON.stringify(item, null, 2));
     }, [item]);
     
+    // Determinar el estado de verificación
+    const isSuccess = item.isSuccess !== false && item.verificationResult !== 'FAILED';
+    const verificationText = isSuccess ? '✓ Verificado' : '✗ Verificación Fallida';
+    const statusColor = isSuccess ? colors.primary.green : '#dc3545'; // Rojo para fallos
+    const avatarIcon = isSuccess ? 'person' : 'person-remove';
+    
     return (
     <TouchableOpacity
-      onPress={() => handleDownloadCertificate(item)}
-      activeOpacity={0.7}
+      onPress={() => isSuccess ? handleDownloadCertificate(item) : null}
+      activeOpacity={isSuccess ? 0.7 : 1.0}
       style={{
         backgroundColor: colors.white,
         borderRadius: borderRadius.lg,
         padding: spacing.lg,
         marginBottom: spacing.md,
         ...shadows.md,
+        borderLeftWidth: 4,
+        borderLeftColor: statusColor,
       }}
     >
       {/* Header con estado de verificación */}
@@ -437,17 +446,17 @@ const CertificadosScreen = () => {
         marginBottom: spacing.md,
       }}>
         <View style={{
-          backgroundColor: colors.primary.green + '20',
+          backgroundColor: statusColor + '20',
           borderRadius: borderRadius.md,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
         }}>
           <Text style={{
             fontSize: typography.fontSize.sm,
-            color: colors.primary.green,
+            color: statusColor,
             fontWeight: typography.fontWeight.medium,
           }}>
-            ✓ Verificado
+            {verificationText}
           </Text>
         </View>
         
@@ -461,13 +470,30 @@ const CertificadosScreen = () => {
             {formatDate(item.timestamp)}
           </Text>
           
-          <View style={{
-            backgroundColor: colors.primary.purple + '20',
-            borderRadius: borderRadius.md,
-            padding: spacing.sm,
-          }}>
-            <Ionicons name="download-outline" size={16} color={colors.primary.purple} />
-          </View>
+          {isSuccess && (
+            <View style={{
+              backgroundColor: colors.primary.purple + '20',
+              borderRadius: borderRadius.md,
+              padding: spacing.sm,
+            }}>
+              <Ionicons name="download-outline" size={16} color={colors.primary.purple} />
+            </View>
+          )}
+          {!isSuccess && item.errorCode && (
+            <View style={{
+              backgroundColor: '#dc3545' + '20',
+              borderRadius: borderRadius.md,
+              padding: spacing.sm,
+            }}>
+              <Text style={{
+                fontSize: typography.fontSize.xs,
+                color: '#dc3545',
+                fontWeight: typography.fontWeight.medium,
+              }}>
+                {item.errorCode}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
 
@@ -475,7 +501,7 @@ const CertificadosScreen = () => {
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         {/* Avatar */}
         <View style={{
-          backgroundColor: colors.primary.green + '20',
+          backgroundColor: statusColor + '20',
           borderRadius: borderRadius.full,
           width: 50,
           height: 50,
@@ -483,7 +509,7 @@ const CertificadosScreen = () => {
           alignItems: 'center',
           marginRight: spacing.md,
         }}>
-          <Ionicons name="person" size={24} color={colors.primary.green} />
+          <Ionicons name={avatarIcon} size={24} color={statusColor} />
         </View>
         
         {/* Datos del usuario */}
