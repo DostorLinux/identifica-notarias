@@ -354,3 +354,10 @@ CREATE TABLE `task` (
 
 -- 2025-08-06: Agregar campo must_change_password para contraseñas temporales
 ALTER TABLE user ADD COLUMN must_change_password TINYINT(1) DEFAULT 0;
+
+-- 2025-08-28: Agregar campos adicionales para datos del carnet/documento
+ALTER TABLE user ADD COLUMN birth_date DATE DEFAULT NULL;
+ALTER TABLE user ADD COLUMN country VARCHAR(100) DEFAULT NULL;  
+ALTER TABLE user ADD COLUMN gender CHAR(1) DEFAULT NULL;
+ALTER TABLE user ADD COLUMN document_number VARCHAR(50) DEFAULT NULL;
+ALTER TABLE user ADD COLUMN expiration_date DATE DEFAULT NULL;

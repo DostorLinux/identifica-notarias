@@ -22,6 +22,12 @@ $last_name  = api_get($request, 'last_name');
 $email      = api_get($request, 'email');
 $picture    = api_get_mandatory($request, 'picture');
 $role       = api_get_mandatory($request, 'role');
+$birth_date = api_get($request, 'birth_date');
+$country    = api_get($request, 'country');
+$gender     = api_get($request, 'gender');
+$document_number = api_get($request, 'document_number');
+$expiration_date = api_get($request, 'expiration_date');
+$signature  = api_get($request, 'signature');
 
 if (!empty($email) && !isValidEmail($email)) {
     api_abort('INVALID_EMAIL', 'email');
@@ -40,16 +46,16 @@ $userId = $con->get_one($sql, $doc_id);
 
 if (!empty($userId)) {
     $sql = 'update user set sec_id = ?, username = ?, first_name = ?, last_name = ?'.
-        ', email = ?, vector = ?, role = ?, active = ? where id = ?';
-    $params = array($sec_id, $username, $first_name, $last_name, $email, $encoded_vector, $role, 'Y', $userId);
+        ', email = ?, vector = ?, role = ?, active = ?, birth_date = ?, country = ?, gender = ?, document_number = ?, expiration_date = ? where id = ?';
+    $params = array($sec_id, $username, $first_name, $last_name, $email, $encoded_vector, $role, 'Y', $birth_date, $country, $gender, $document_number, $expiration_date, $userId);
     $result = 'updated';
     $con->execute($sql, $params);
 } else {
     $uuid = guidv4();
     $created_by = $auth_info['userId'];
-    $sql = 'insert into user (doc_id, sec_id, username, first_name, last_name, email, vector, role, active, pub_id, created_by, updated) '.
-        'values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now())';
-    $params = array($doc_id, $sec_id, $username, $first_name, $last_name, $email, $encoded_vector, $role, 'Y', $uuid, $created_by);
+    $sql = 'insert into user (doc_id, sec_id, username, first_name, last_name, email, vector, role, active, pub_id, created_by, updated, birth_date, country, gender, document_number, expiration_date) '.
+        'values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, now(), ?, ?, ?, ?, ?)';
+    $params = array($doc_id, $sec_id, $username, $first_name, $last_name, $email, $encoded_vector, $role, 'Y', $uuid, $created_by, $birth_date, $country, $gender, $document_number, $expiration_date);
     $result = 'created';
     $con->execute($sql, $params);
     $userId = $con->get_last_id();
@@ -62,6 +68,12 @@ if (!empty($password)) {
 }
 
 gate_save_face(FACE_TYPE_USER, $userId, $face_image);
+
+// Save signature if provided
+if (!empty($signature)) {
+    $signature_image = base64_decode($signature);
+    gate_save_signature($userId, $signature_image);
+}
 
 $response = array('id' => $userId + $gate_first_internal_user_id, 'result' => $result);
 

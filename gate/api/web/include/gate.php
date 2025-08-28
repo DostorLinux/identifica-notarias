@@ -637,6 +637,36 @@ function gate_get_face_path($face_type, $id)
     return "$dir/$sub_dir/$id.jpg";
 }
 
+function gate_save_signature($userId, $signature_image)
+{
+    error_log("saving signature image for user id $userId");
+    $file_name = gate_get_signature_path($userId);
+
+    error_log("saving signature image for user id $userId at $file_name");
+
+    $dir_name = dirname($file_name);
+    error_log("making sure $dir_name exists");
+    @mkdir($dir_name, 0755, true);
+    if (!file_exists($dir_name)) {
+        error_log("$dir_name couldn't be created");
+    }
+
+    try {
+        file_put_contents($file_name, $signature_image);
+        error_log("saved signature image for user id $userId at $file_name");
+    } catch (Exception $e) {
+        error_log("error saving signature for user id $userId at $file_name: " . ($e->getMessage()));
+    }
+}
+
+function gate_get_signature_path($userId)
+{
+    global $dir_face_save;
+    
+    $sub_dir = (int)($userId % 100);
+    return "$dir_face_save/$sub_dir/signature_$userId.jpg";
+}
+
 function gate_get_encoded_picture($user_id)
 {
     $image_file = gate_get_face_path(FACE_TYPE_USER, $user_id);
