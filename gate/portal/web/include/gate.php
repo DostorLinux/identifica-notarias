@@ -459,12 +459,15 @@ function gate_save_event($con, $userId, $deviceId, $entry, $lat = 0, $lng = 0, $
     if ($deviceId !=null){
         gate_validate_device_location($con, $deviceId, $lat, $lng);
         //Validate if the user_type is in the device.
+        // DISABLED: Device validation removed for notaria version
+        /*
         if (gate_validate_user_type($con, $userId, $deviceId) == false){
             //validate if user has access to the device
             if (gate_validate_user_device($con, $userId, $deviceId) == false){
                 api_abort('INVALID_DEVICE', 'User does not have access to the device');
             }
         }
+        */
 
         if ($isCarpooling == 1 ){
             if ($plate == ''){
@@ -514,8 +517,9 @@ function gate_save_event($con, $userId, $deviceId, $entry, $lat = 0, $lng = 0, $
     if (!empty($warning)) $event['warning'] = $warning;
     $sql = 'select doc_id from user where id = ?';
     $doc_id = $con->get_one($sql, array($userId));
-    cas_save_event($doc_id, $entry, $time);
-    xps_save_event($con, $event, $userId, $deviceId);
+    // DISABLED: CAS and XPS not needed for notaria version
+    // cas_save_event($doc_id, $entry, $time);
+    // xps_save_event($con, $event, $userId, $deviceId);
     return $event;
 }
 
@@ -1431,6 +1435,14 @@ function generate_temporary_password($length = 12) {
     }
     
     return $password;
+}
+
+function gate_get_signature_path($userId)
+{
+    global $dir_face_save;
+    
+    $sub_dir = (int)($userId % 100);
+    return "$dir_face_save/$sub_dir/signature_$userId.jpg";
 }
 
 

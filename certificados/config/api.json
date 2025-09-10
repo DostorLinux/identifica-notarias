@@ -1,6 +1,6 @@
 {
   "gate": {
-    "baseUrl": "https://access-control-test.identifica.ai",
+    "baseUrl": "https://notariadepaine.identifica.ai",
     "endpoints": {
       "login": "/services/login.php",
       "ping": "/services/ping.php",

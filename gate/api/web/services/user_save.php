@@ -70,9 +70,23 @@ if (!empty($password)) {
 gate_save_face(FACE_TYPE_USER, $userId, $face_image);
 
 // Save signature if provided
+error_log("DEBUG: signature parameter received: " . (isset($signature) ? 'YES' : 'NO'));
+error_log("DEBUG: signature empty check: " . (empty($signature) ? 'EMPTY' : 'NOT_EMPTY'));
+if (isset($signature)) {
+    error_log("DEBUG: signature length: " . strlen($signature));
+}
+
 if (!empty($signature)) {
+    error_log("DEBUG: Attempting to save signature for user $userId");
     $signature_image = base64_decode($signature);
-    gate_save_signature($userId, $signature_image);
+    if ($signature_image === false) {
+        error_log("ERROR: Failed to decode signature base64 for user $userId");
+    } else {
+        error_log("DEBUG: Signature decoded successfully, size: " . strlen($signature_image) . " bytes");
+        gate_save_signature($userId, $signature_image);
+    }
+} else {
+    error_log("DEBUG: No signature provided for user $userId");
 }
 
 $response = array('id' => $userId + $gate_first_internal_user_id, 'result' => $result);

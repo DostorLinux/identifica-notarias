@@ -50,10 +50,10 @@ const DashboardScreen = () => {
     return [
       { 
         id: 'usuarios', 
-        title: 'Usuarios', 
+        title: 'Gestión de Usuarios', 
         icon: 'people-outline', 
         color: colors.primary.green, 
-        route: 'explore', 
+        route: 'usuarios', 
         enabled: ['admin', 'super_admin'].includes(userRole)
       },
       { 

@@ -8,15 +8,46 @@ export const generateCertificatePDF = async (biometricRecord, operatorRut = null
     console.log('🔄 Generando certificado PDF en servidor para:', biometricRecord);
     console.log('👤 RUT del operario:', operatorRut);
     
-    // Obtener configuración de API
-    let baseUrl = 'https://access-control-test.identifica.ai';
+    // Obtener configuración de API del servidor
+    let baseUrl = null;
     try {
-      const configModule = require('../config/api.json');
-      if (configModule?.gate?.baseUrl) {
-        baseUrl = configModule.gate.baseUrl;
+      // Primero intentar obtener la configuración del servidor
+      const serverConfigUrl = `${window.location.origin}/config/api.json`;
+      console.log('🔧 Obteniendo configuración del servidor:', serverConfigUrl);
+      
+      const configResponse = await fetch(serverConfigUrl, {
+        method: 'GET',
+        timeout: 5000
+      });
+      
+      if (configResponse.ok) {
+        const serverConfig = await configResponse.json();
+        if (serverConfig?.subdomain) {
+          baseUrl = `https://${serverConfig.subdomain}`;
+          console.log('✅ Usando configuración del servidor:', baseUrl);
+        }
       }
-    } catch (configError) {
-      console.log('Usando configuración por defecto para certificado:', configError.message);
+    } catch (serverConfigError) {
+      console.log('⚠️ Error obteniendo configuración del servidor:', serverConfigError.message);
+    }
+    
+    // Fallback a configuración local si no se pudo obtener del servidor
+    if (!baseUrl) {
+      try {
+        const configModule = require('../config/api.json');
+        if (configModule?.gate?.baseUrl) {
+          baseUrl = configModule.gate.baseUrl;
+          console.log('📱 Usando configuración local:', baseUrl);
+        }
+      } catch (configError) {
+        console.log('⚠️ Error obteniendo configuración local:', configError.message);
+      }
+    }
+    
+    // Último fallback
+    if (!baseUrl) {
+      baseUrl = window.location.origin;
+      console.log('🔧 Usando origen de la ventana como fallback:', baseUrl);
     }
     
     // Formatear timestamp para el servidor
@@ -116,15 +147,46 @@ const getPhotoEvidence = async (biometricRecord) => {
   try {
     console.log('🔍 Obteniendo evidencia fotográfica para:', biometricRecord.rut);
     
-    // Obtener configuración de API
-    let baseUrl = 'https://access-control-test.identifica.ai';
+    // Obtener configuración de API del servidor
+    let baseUrl = null;
     try {
-      const configModule = require('../config/api.json');
-      if (configModule?.gate?.baseUrl) {
-        baseUrl = configModule.gate.baseUrl;
+      // Primero intentar obtener la configuración del servidor
+      const serverConfigUrl = `${window.location.origin}/config/api.json`;
+      console.log('🔧 Obteniendo configuración del servidor para evidencia:', serverConfigUrl);
+      
+      const configResponse = await fetch(serverConfigUrl, {
+        method: 'GET',
+        timeout: 5000
+      });
+      
+      if (configResponse.ok) {
+        const serverConfig = await configResponse.json();
+        if (serverConfig?.subdomain) {
+          baseUrl = `https://${serverConfig.subdomain}`;
+          console.log('✅ Usando configuración del servidor para evidencia:', baseUrl);
+        }
       }
-    } catch (configError) {
-      console.log('Usando configuración por defecto para evidencia:', configError.message);
+    } catch (serverConfigError) {
+      console.log('⚠️ Error obteniendo configuración del servidor para evidencia:', serverConfigError.message);
+    }
+    
+    // Fallback a configuración local si no se pudo obtener del servidor
+    if (!baseUrl) {
+      try {
+        const configModule = require('../config/api.json');
+        if (configModule?.gate?.baseUrl) {
+          baseUrl = configModule.gate.baseUrl;
+          console.log('📱 Usando configuración local para evidencia:', baseUrl);
+        }
+      } catch (configError) {
+        console.log('⚠️ Error obteniendo configuración local para evidencia:', configError.message);
+      }
+    }
+    
+    // Último fallback
+    if (!baseUrl) {
+      baseUrl = window.location.origin;
+      console.log('🔧 Usando origen de la ventana como fallback para evidencia:', baseUrl);
     }
     
     const evidence = {

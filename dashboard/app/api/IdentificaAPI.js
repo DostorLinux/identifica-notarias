@@ -2202,6 +2202,135 @@ class IdentificaAPI {
       return { success: false, error: errorMessage };
     }
   }
+
+  // System User Management
+  async getSystemUsers(params = {}) {
+    try {
+      console.log('👥 IdentificaAPI.getSystemUsers - Obteniendo usuarios del sistema');
+      
+      if (!this.settings) {
+        await this.initialize();
+      }
+
+      const url = this.buildUrl('services/getUsers.php', false);
+      const headers = await this.getAuthHeaders();
+      
+      // Parámetros para obtener usuarios del sistema
+      const queryParams = {
+        type: 'system', // Solo usuarios del sistema (no biometricos)
+        ...params
+      };
+      
+      console.log('🌐 URL:', url);
+      console.log('📦 Query params:', queryParams);
+      
+      const response = await axios.get(url, { 
+        headers,
+        params: queryParams,
+        timeout: 10000 
+      });
+      
+      const data = await this.handleResponse(response);
+      
+      if (data.data) {
+        // Mapear datos de array a objeto
+        const mappedUsers = data.data.map(user => ({
+          id: user[9],
+          pub_id: user[0],
+          doc_id: user[1],
+          sec_id: user[2], 
+          username: user[3],
+          first_name: user[4],
+          last_name: user[5],
+          email: user[6],
+          role: user[7],
+          active: user[8],
+          isDenied: user[10],
+          deniedNote: user[11]
+        }));
+
+        console.log('✅ Usuarios del sistema cargados:', mappedUsers.length);
+        return {
+          success: true,
+          users: mappedUsers
+        };
+      }
+      
+      return { success: false, error: 'No se encontraron usuarios' };
+    } catch (error) {
+      console.error('❌ Error en getSystemUsers:', error);
+      return { success: false, error: error.message || 'Error al cargar usuarios del sistema' };
+    }
+  }
+
+  async saveSystemUser(userData) {
+    try {
+      console.log('💾 IdentificaAPI.saveSystemUser - Guardando usuario del sistema');
+      console.log('📦 Datos del usuario:', userData);
+      
+      if (!this.settings) {
+        await this.initialize();
+      }
+
+      const url = this.buildUrl('services/saveUser.php', false);
+      const headers = await this.getAuthHeaders();
+      
+      const response = await axios.post(url, userData, { 
+        headers,
+        timeout: 10000
+      });
+      
+      const result = await this.handleResponse(response);
+      
+      console.log('✅ Usuario guardado exitosamente:', result);
+      return { success: true, ...result };
+    } catch (error) {
+      console.error('❌ Error en saveSystemUser:', error);
+      
+      let errorMessage = 'Error al guardar usuario';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  async deleteSystemUser(userId) {
+    try {
+      console.log('🗑️ IdentificaAPI.deleteSystemUser - Eliminando usuario:', userId);
+      
+      if (!this.settings) {
+        await this.initialize();
+      }
+
+      const url = this.buildUrl('services/deleteUser.php', false);
+      const headers = await this.getAuthHeaders();
+      
+      const response = await axios.post(url, { id: userId }, { 
+        headers,
+        timeout: 10000
+      });
+      
+      const result = await this.handleResponse(response);
+      
+      console.log('✅ Usuario eliminado exitosamente');
+      return { success: true, ...result };
+    } catch (error) {
+      console.error('❌ Error en deleteSystemUser:', error);
+      
+      let errorMessage = 'Error al eliminar usuario';
+      if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      return { success: false, error: errorMessage };
+    }
+  }
 }
 
 // Export a singleton instance

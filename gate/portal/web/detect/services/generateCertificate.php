@@ -138,6 +138,80 @@ try {
     
     error_log("System image status: " . ($systemImage ? "Available" : "Not available"));
     
+    // 3. Obtener firma del usuario
+    $signatureImage = null;
+    try {
+        if (!empty($user_id)) {
+            error_log("DEBUG SIGNATURE: Starting signature lookup for user_id: " . $user_id);
+            
+            // Verificar si la función existe
+            if (!function_exists('gate_get_signature_path')) {
+                error_log("ERROR SIGNATURE: Function gate_get_signature_path does not exist!");
+            } else {
+                error_log("DEBUG SIGNATURE: Function gate_get_signature_path exists");
+            }
+            
+            // Verificar la variable global
+            global $dir_face_save;
+            error_log("DEBUG SIGNATURE: dir_face_save value: " . (isset($dir_face_save) ? $dir_face_save : "NOT SET"));
+            
+            // Usar la función gate_get_signature_path
+            $signature_file = gate_get_signature_path($user_id);
+            error_log("DEBUG SIGNATURE: Looking for signature at: " . $signature_file);
+            
+            // Verificar el directorio padre
+            $signature_dir = dirname($signature_file);
+            error_log("DEBUG SIGNATURE: Signature directory: " . $signature_dir);
+            error_log("DEBUG SIGNATURE: Directory exists: " . (is_dir($signature_dir) ? "YES" : "NO"));
+            
+            // Verificar permisos del directorio
+            if (is_dir($signature_dir)) {
+                error_log("DEBUG SIGNATURE: Directory is readable: " . (is_readable($signature_dir) ? "YES" : "NO"));
+                
+                // Listar archivos en el directorio
+                $files = scandir($signature_dir);
+                error_log("DEBUG SIGNATURE: Files in directory: " . json_encode($files));
+                
+                // Buscar archivos que contengan el user_id
+                $user_files = array_filter($files, function($file) use ($user_id) {
+                    return strpos($file, "signature_" . $user_id) !== false || strpos($file, $user_id) !== false;
+                });
+                error_log("DEBUG SIGNATURE: Files matching user_id " . $user_id . ": " . json_encode($user_files));
+            }
+            
+            if (file_exists($signature_file)) {
+                $signatureImage = base64_encode(file_get_contents($signature_file));
+                error_log("SUCCESS SIGNATURE: Signature loaded successfully from: " . $signature_file);
+                error_log("DEBUG SIGNATURE: File size: " . filesize($signature_file) . " bytes");
+            } else {
+                error_log("ERROR SIGNATURE: Signature file does not exist: " . $signature_file);
+                
+                // Intentar rutas alternativas
+                $alt_paths = [
+                    "/var/www/html/gate/signatures/" . $user_id . ".jpg",
+                    "/var/www/html/gate/signatures/signature_" . $user_id . ".jpg",
+                    dirname($signature_file) . "/" . $user_id . ".jpg"
+                ];
+                
+                foreach ($alt_paths as $alt_path) {
+                    error_log("DEBUG SIGNATURE: Trying alternative path: " . $alt_path);
+                    if (file_exists($alt_path)) {
+                        $signatureImage = base64_encode(file_get_contents($alt_path));
+                        error_log("SUCCESS SIGNATURE: Found signature at alternative path: " . $alt_path);
+                        break;
+                    }
+                }
+            }
+        } else {
+            error_log("ERROR SIGNATURE: user_id is empty");
+        }
+    } catch (Exception $e) {
+        error_log("ERROR SIGNATURE: Exception getting signature: " . $e->getMessage());
+        error_log("ERROR SIGNATURE: Stack trace: " . $e->getTraceAsString());
+    }
+    
+    error_log("FINAL SIGNATURE STATUS: " . ($signatureImage ? "Available (length: " . strlen($signatureImage) . ")" : "Not available"));
+    
     // Fallback para número de auditoría si no se encontró en la base de datos
     if (empty($auditNumber)) {
         $auditNumber = 'CERT-' . substr(time(), -6) . strtoupper(substr(md5(rand()), 0, 5));
@@ -226,46 +300,64 @@ try {
     
     $pdf->Ln(5);
     
-    // Mostrar imágenes (siempre mostrar las dos secciones)
+    // Mostrar imágenes (siempre mostrar las tres secciones)
     $currentY = $pdf->GetY();
-    $imageWidth = 40;
-    $imageHeight = 40;
-    $spacing = 50;
+    $imageWidth = 35;  // Reducir ancho para que quepan 3 imágenes
+    $imageHeight = 35; // Reducir altura proporcionalmente
+    $spacing = 45;
     
-    // Imagen capturada
-    $pdf->SetXY(40, $currentY);
-    $pdf->SetFont('helvetica', 'B', 10);
+    // Imagen capturada (primera imagen)
+    $pdf->SetXY(25, $currentY);
+    $pdf->SetFont('helvetica', 'B', 9);
     $pdf->Cell($imageWidth, 5, 'FOTO CAPTURADA', 0, 1, 'C');
     
     if ($capturedImage) {
         // Crear imagen temporal
         $tempCaptured = tempnam(sys_get_temp_dir(), 'captured_') . '.jpg';
         file_put_contents($tempCaptured, base64_decode($capturedImage));
-        $pdf->Image($tempCaptured, 40, $currentY + 5, $imageWidth, $imageHeight, 'JPG');
+        $pdf->Image($tempCaptured, 25, $currentY + 5, $imageWidth, $imageHeight, 'JPG');
         unlink($tempCaptured);
     } else {
-        $pdf->Rect(40, $currentY + 5, $imageWidth, $imageHeight, 'D');
-        $pdf->SetXY(45, $currentY + 20);
+        $pdf->Rect(25, $currentY + 5, $imageWidth, $imageHeight, 'D');
+        $pdf->SetXY(28, $currentY + 18);
         $pdf->SetFont('helvetica', '', 8);
-        $pdf->Cell($imageWidth - 10, 5, 'No disponible', 0, 1, 'C');
+        $pdf->Cell($imageWidth - 6, 5, 'No disponible', 0, 1, 'C');
     }
     
-    // Imagen del sistema
-    $pdf->SetXY(130, $currentY);
-    $pdf->SetFont('helvetica', 'B', 10);
+    // Imagen del sistema (segunda imagen)
+    $pdf->SetXY(75, $currentY);
+    $pdf->SetFont('helvetica', 'B', 9);
     $pdf->Cell($imageWidth, 5, 'FOTO DEL SISTEMA', 0, 1, 'C');
     
     if ($systemImage) {
         // Crear imagen temporal
         $tempSystem = tempnam(sys_get_temp_dir(), 'system_') . '.jpg';
         file_put_contents($tempSystem, base64_decode($systemImage));
-        $pdf->Image($tempSystem, 130, $currentY + 5, $imageWidth, $imageHeight, 'JPG');
+        $pdf->Image($tempSystem, 75, $currentY + 5, $imageWidth, $imageHeight, 'JPG');
         unlink($tempSystem);
     } else {
-        $pdf->Rect(130, $currentY + 5, $imageWidth, $imageHeight, 'D');
-        $pdf->SetXY(135, $currentY + 20);
+        $pdf->Rect(75, $currentY + 5, $imageWidth, $imageHeight, 'D');
+        $pdf->SetXY(78, $currentY + 18);
         $pdf->SetFont('helvetica', '', 8);
-        $pdf->Cell($imageWidth - 10, 5, 'No disponible', 0, 1, 'C');
+        $pdf->Cell($imageWidth - 6, 5, 'No disponible', 0, 1, 'C');
+    }
+    
+    // Firma del usuario (tercera imagen)
+    $pdf->SetXY(125, $currentY);
+    $pdf->SetFont('helvetica', 'B', 9);
+    $pdf->Cell($imageWidth, 5, 'FIRMA DEL CARNET', 0, 1, 'C');
+    
+    if ($signatureImage) {
+        // Crear imagen temporal
+        $tempSignature = tempnam(sys_get_temp_dir(), 'signature_') . '.jpg';
+        file_put_contents($tempSignature, base64_decode($signatureImage));
+        $pdf->Image($tempSignature, 125, $currentY + 5, $imageWidth, $imageHeight, 'JPG');
+        unlink($tempSignature);
+    } else {
+        $pdf->Rect(125, $currentY + 5, $imageWidth, $imageHeight, 'D');
+        $pdf->SetXY(128, $currentY + 18);
+        $pdf->SetFont('helvetica', '', 8);
+        $pdf->Cell($imageWidth - 6, 5, 'No disponible', 0, 1, 'C');
     }
     
     $pdf->SetY($currentY + $imageHeight + 20);

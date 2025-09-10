@@ -35,10 +35,35 @@ export const colors = {
   // Common colors
   white: '#FFFFFF',
   black: '#000000',
-  error: '#B32C32',
-  success: '#3AAA35',
-  warning: '#89B630',
-  info: '#392B85',
+  
+  // Status colors with variants
+  error: {
+    main: '#B32C32',
+    light: '#F5C6CB',
+    dark: '#8B0000',
+  },
+  success: {
+    main: '#3AAA35',
+    light: '#D4F3D0',
+    dark: '#2E8B2B',
+  },
+  warning: {
+    main: '#89B630',
+    light: '#FFF3CD',
+    dark: '#7A8B00',
+  },
+  info: {
+    main: '#392B85',
+    light: '#CCE7FF',
+    dark: '#1E1A5C',
+  },
+  
+  // Border colors
+  border: {
+    light: '#E1E5E9',
+    medium: '#D6DBDF',
+    dark: '#AEB6BF',
+  },
   
   // Backgrounds
   background: {
@@ -78,6 +103,7 @@ export const typography = {
     light: '300',
     regular: '400',
     medium: '500',
+    semibold: '600',
     bold: '700',
     black: '900',
   },

@@ -131,15 +131,46 @@ const CertificadosScreen = () => {
 
   const loadServerBiometricRecords = async () => {
     try {
-      // Obtener configuración de API
-      let baseUrl = 'https://access-control-test.identifica.ai';
+      // Obtener configuración de API del servidor
+      let baseUrl = null;
       try {
-        const configModule = require('../config/api.json');
-        if (configModule?.gate?.baseUrl) {
-          baseUrl = configModule.gate.baseUrl;
+        // Primero intentar obtener la configuración del servidor
+        const serverConfigUrl = `${window.location.origin}/config/api.json`;
+        console.log('🔧 Obteniendo configuración del servidor para registros:', serverConfigUrl);
+        
+        const configResponse = await fetch(serverConfigUrl, {
+          method: 'GET',
+          timeout: 5000
+        });
+        
+        if (configResponse.ok) {
+          const serverConfig = await configResponse.json();
+          if (serverConfig?.subdomain) {
+            baseUrl = `https://${serverConfig.subdomain}`;
+            console.log('✅ Usando configuración del servidor para registros:', baseUrl);
+          }
         }
-      } catch (configError) {
-        console.log('Usando configuración por defecto para registros biométricos:', configError.message);
+      } catch (serverConfigError) {
+        console.log('⚠️ Error obteniendo configuración del servidor para registros:', serverConfigError.message);
+      }
+      
+      // Fallback a configuración local si no se pudo obtener del servidor
+      if (!baseUrl) {
+        try {
+          const configModule = require('../config/api.json');
+          if (configModule?.gate?.baseUrl) {
+            baseUrl = configModule.gate.baseUrl;
+            console.log('📱 Usando configuración local para registros:', baseUrl);
+          }
+        } catch (configError) {
+          console.log('⚠️ Error obteniendo configuración local para registros:', configError.message);
+        }
+      }
+      
+      // Último fallback
+      if (!baseUrl) {
+        baseUrl = window.location.origin;
+        console.log('🔧 Usando origen de la ventana como fallback para registros:', baseUrl);
       }
       
       // Lista de servicios para probar en orden
@@ -180,9 +211,6 @@ const CertificadosScreen = () => {
           
           if (result.success && result.data) {
             console.log(`✅ Registros biométricos del servidor ${serviceName} cargados:`, result.data.length);
-            if (result.data.length > 0) {
-              console.log(`🔍 Primer registro del ${serviceName}:`, JSON.stringify(result.data[0], null, 2));
-            }
             return result.data;
           } else {
             throw new Error(`Respuesta del servidor ${serviceName} inválida`);
