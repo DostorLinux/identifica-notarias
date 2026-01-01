@@ -2,7 +2,7 @@
 FROM dostorlinux/identifica-base:stable
 
 COPY gate/ /var/www/html/gate
-COPY certificados/dist/* /var/www/html/gate/portal/web/
+COPY certificados/dist/ /var/www/html/gate/portal/web/
 COPY api.conf /etc/apache2/sites-enabled/api.conf
 COPY portal.conf /etc/apache2/sites-enabled/portal.conf
 COPY requirements.txt /root/
@@ -23,14 +23,6 @@ RUN composer update && composer install && composer require phpmailer/phpmailer 
     composer require lcobucci/jwt && composer require tecnickcom/tcpdf && mkdir -p /opt/face_match/faces && chown -R www-data /opt/*
 
 
-
-#WORKDIR /var/www/html/
-#RUN cp -r dist/* /var/www/html/web/
-#WORKDIR /var/www/html/gate/portal/front_angular/configIdentifica
-#RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
-#RUN apt-get update && apt-get install -y nodejs && npm install
-#RUN npm install -g @angular/cli
-#RUN ng build
 
 WORKDIR /var/www/html/gate/api/face_match_server/
 
