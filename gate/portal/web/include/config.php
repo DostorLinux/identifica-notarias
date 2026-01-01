@@ -13,6 +13,11 @@ $dir_face_save  = '/opt/face_match/faces';
 $dir_face_history = '/opt/face_match/history';
 $dir_face_save_visitor = '/opt/face_match/faces_visitor';
 
+// Configuraciones para guardado de usuarios desde lector-notarias
+$dir_user_pictures = '/var/www/html/gate/portal/web/uploads/user_pictures';
+$dir_user_signatures = '/var/www/html/gate/portal/web/uploads/user_signatures';
+$dir_captured_images = '/var/www/html/gate/portal/web/uploads/captured_images';
+
 $match_history_enabled = false;
 $match_history_size = 50;
 

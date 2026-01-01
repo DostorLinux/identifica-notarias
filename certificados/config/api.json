@@ -1,6 +1,6 @@
 {
   "gate": {
-    "baseUrl": "https://notariadepaine.identifica.ai",
+    "baseUrl": "https://sepulvedaponce.identifica.ai",
     "endpoints": {
       "login": "/services/login.php",
       "ping": "/services/ping.php",

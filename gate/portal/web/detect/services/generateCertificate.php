@@ -16,6 +16,15 @@ if (!class_exists('TCPDF')) {
     exit;
 }
 
+// Debug: Log all received parameters with forced output
+$debug_msg = "GENERATECERT: All GET parameters: " . json_encode($_GET);
+error_log($debug_msg);
+file_put_contents('/tmp/cert_debug.log', date('Y-m-d H:i:s') . " - " . $debug_msg . "\n", FILE_APPEND);
+
+$debug_msg2 = "GENERATECERT: All POST parameters: " . json_encode($_POST);
+error_log($debug_msg2);
+file_put_contents('/tmp/cert_debug.log', date('Y-m-d H:i:s') . " - " . $debug_msg2 . "\n", FILE_APPEND);
+
 $rut = getParameter('rut');
 $firstName = getParameter('firstName');
 $lastName = getParameter('lastName');
@@ -23,7 +32,10 @@ $eventId = getParameter('eventId');
 $timestamp = getParameter('timestamp');
 $operatorRut = getParameter('operatorRut'); // RUT del operario desde la app
 
+error_log("GENERATECERT: Parsed parameters - RUT: '$rut', FirstName: '$firstName', LastName: '$lastName', EventId: '$eventId', Timestamp: '$timestamp', OperatorRUT: '$operatorRut'");
+
 if (empty($rut) || empty($firstName) || empty($lastName)) {
+    error_log("GENERATECERT: MISSING_PARAMETERS - RUT empty: " . (empty($rut) ? 'YES' : 'NO') . ", FirstName empty: " . (empty($firstName) ? 'YES' : 'NO') . ", LastName empty: " . (empty($lastName) ? 'YES' : 'NO'));
     abort('MISSING_PARAMETERS');
 }
 
@@ -31,13 +43,13 @@ error_log("Certificate generation started for RUT: $rut, Name: $firstName $lastN
 
 $con = new SimpleDb();
 
-// Verificar y crear directorio de imágenes capturadas si no existe (ruta absoluta)
-$upload_dir = '/var/www/html/gate/portal/web/uploads/captured_images/';
-if (!is_dir($upload_dir)) {
-    mkdir($upload_dir, 0755, true);
-    error_log("Created captured_images directory: " . $upload_dir);
+// Verificar y crear directorio de imágenes capturadas si no existe (usando configuración)
+global $dir_captured_images;
+if (!is_dir($dir_captured_images)) {
+    mkdir($dir_captured_images, 0755, true);
+    error_log("Created captured_images directory: " . $dir_captured_images);
 } else {
-    error_log("Captured images directory exists: " . $upload_dir);
+    error_log("Captured images directory exists: " . $dir_captured_images);
 }
 
 try {
@@ -68,9 +80,10 @@ try {
             // Verificar si la ruta es absoluta o relativa
             $filepath = $imageRow['filepath'];
             if (!file_exists($filepath)) {
-                // Si no existe, intentar rutas alternativas
+                // Si no existe, intentar rutas alternativas usando configuración
+                global $dir_captured_images;
                 $alt_paths = [
-                    '/var/www/html/gate/portal/web/uploads/captured_images/' . $imageRow['filename'],
+                    $dir_captured_images . '/' . $imageRow['filename'],
                     __DIR__ . '/../../uploads/captured_images/' . $imageRow['filename'],
                     __DIR__ . '/../../../uploads/captured_images/' . $imageRow['filename']
                 ];
@@ -128,6 +141,42 @@ try {
                 error_log("System image loaded successfully from: " . $image_file);
             } else {
                 error_log("System image file does not exist: " . $image_file);
+                
+                // *** NUEVO: Buscar foto en base de datos y backup ***
+                try {
+                    // Buscar en base de datos
+                    $sql_picture = "SELECT picture_path FROM user WHERE id = ?";
+                    $db_picture_path = $con->get_one($sql_picture, array($user_id));
+                    
+                    if (!empty($db_picture_path) && file_exists($db_picture_path)) {
+                        $systemImage = base64_encode(file_get_contents($db_picture_path));
+                        error_log("SUCCESS PICTURE: Found picture from database path: " . $db_picture_path);
+                    } else {
+                        if (!empty($db_picture_path)) {
+                            error_log("DEBUG PICTURE: Database path exists but file not found: " . $db_picture_path);
+                        } else {
+                            error_log("DEBUG PICTURE: No picture_path found in database for user_id: " . $user_id);
+                        }
+                        
+                        // Buscar en ubicaciones de backup
+                        global $dir_user_pictures;
+                        $backup_paths = [
+                            $dir_user_pictures . '/user_' . $user_id . '_picture.jpg',
+                            '/var/www/html/gate/portal/web/uploads/user_pictures/user_' . $user_id . '_picture.jpg'
+                        ];
+                        
+                        foreach ($backup_paths as $backup_path) {
+                            error_log("DEBUG PICTURE: Trying backup path: " . $backup_path);
+                            if (file_exists($backup_path)) {
+                                $systemImage = base64_encode(file_get_contents($backup_path));
+                                error_log("SUCCESS PICTURE: Found picture at backup path: " . $backup_path);
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception $e) {
+                    error_log("ERROR PICTURE: Database lookup failed: " . $e->getMessage());
+                }
             }
         } else {
             error_log("User not found for RUT: " . $rut);
@@ -186,20 +235,41 @@ try {
             } else {
                 error_log("ERROR SIGNATURE: Signature file does not exist: " . $signature_file);
                 
-                // Intentar rutas alternativas
-                $alt_paths = [
-                    "/var/www/html/gate/signatures/" . $user_id . ".jpg",
-                    "/var/www/html/gate/signatures/signature_" . $user_id . ".jpg",
-                    dirname($signature_file) . "/" . $user_id . ".jpg"
-                ];
-                
-                foreach ($alt_paths as $alt_path) {
-                    error_log("DEBUG SIGNATURE: Trying alternative path: " . $alt_path);
-                    if (file_exists($alt_path)) {
-                        $signatureImage = base64_encode(file_get_contents($alt_path));
-                        error_log("SUCCESS SIGNATURE: Found signature at alternative path: " . $alt_path);
-                        break;
+                // *** NUEVO: Buscar en la base de datos ***
+                try {
+                    $sql_signature = "SELECT signature_path FROM user WHERE id = ?";
+                    $db_signature_path = $con->get_one($sql_signature, array($user_id));
+                    
+                    if (!empty($db_signature_path) && file_exists($db_signature_path)) {
+                        $signatureImage = base64_encode(file_get_contents($db_signature_path));
+                        error_log("SUCCESS SIGNATURE: Found signature from database path: " . $db_signature_path);
+                    } else {
+                        if (!empty($db_signature_path)) {
+                            error_log("DEBUG SIGNATURE: Database path exists but file not found: " . $db_signature_path);
+                        } else {
+                            error_log("DEBUG SIGNATURE: No signature_path found in database for user_id: " . $user_id);
+                        }
+                        
+                        // Intentar rutas alternativas
+                        global $dir_user_signatures;
+                        $alt_paths = [
+                            "/var/www/html/gate/signatures/" . $user_id . ".jpg",
+                            "/var/www/html/gate/signatures/signature_" . $user_id . ".jpg",
+                            dirname($signature_file) . "/" . $user_id . ".jpg",
+                            $dir_user_signatures . '/user_' . $user_id . '_signature.jpg'
+                        ];
+                        
+                        foreach ($alt_paths as $alt_path) {
+                            error_log("DEBUG SIGNATURE: Trying alternative path: " . $alt_path);
+                            if (file_exists($alt_path)) {
+                                $signatureImage = base64_encode(file_get_contents($alt_path));
+                                error_log("SUCCESS SIGNATURE: Found signature at alternative path: " . $alt_path);
+                                break;
+                            }
+                        }
                     }
+                } catch (Exception $e) {
+                    error_log("ERROR SIGNATURE: Database lookup failed: " . $e->getMessage());
                 }
             }
         } else {

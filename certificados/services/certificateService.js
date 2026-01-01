@@ -8,6 +8,11 @@ export const generateCertificatePDF = async (biometricRecord, operatorRut = null
     console.log('🔄 Generando certificado PDF en servidor para:', biometricRecord);
     console.log('👤 RUT del operario:', operatorRut);
     
+    // Debug: ver todas las propiedades del biometricRecord
+    console.log('🔍 Propiedades del biometricRecord:', Object.keys(biometricRecord));
+    console.log('🔍 firstName actual:', biometricRecord.firstName || biometricRecord.first_name);
+    console.log('🔍 lastName actual:', biometricRecord.lastName || biometricRecord.last_name);
+    
     // Obtener configuración de API del servidor
     let baseUrl = null;
     try {
@@ -57,11 +62,18 @@ export const generateCertificatePDF = async (biometricRecord, operatorRut = null
     
     // Construir URL con parámetros
     const certificateUrl = `${baseUrl}/detect/services/generateCertificate.php`;
+    
+    // Handle different field naming conventions
+    const firstName = biometricRecord.firstName || biometricRecord.first_name || '';
+    const lastName = biometricRecord.lastName || biometricRecord.last_name || '';
+    
+    console.log('📝 Nombres procesados para certificado:', { firstName, lastName });
+    
     const params = new URLSearchParams({
       rut: biometricRecord.rut,
-      firstName: biometricRecord.firstName,
-      lastName: biometricRecord.lastName,
-      eventId: biometricRecord.eventId || '',
+      firstName: firstName,
+      lastName: lastName,
+      eventId: biometricRecord.eventId || biometricRecord.event_id || '',
       timestamp: timestamp.toString(),
       ...(operatorRut && { operatorRut })
     });

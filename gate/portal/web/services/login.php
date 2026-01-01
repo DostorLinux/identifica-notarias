@@ -1,5 +1,41 @@
 <?php
 
+// Handle CORS preflight requests
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+
+// Allow local development origins
+$is_local_origin = false;
+if (!empty($origin)) {
+    $parsed = parse_url($origin);
+    $host = $parsed['host'] ?? '';
+    
+    // Allow localhost, 127.0.0.1, and local network IPs
+    if ($host === 'localhost' || 
+        $host === '127.0.0.1' || 
+        preg_match('/^192\.168\./', $host) ||
+        preg_match('/^10\./', $host) ||
+        preg_match('/^172\.(1[6-9]|2[0-9]|3[0-1])\./', $host)) {
+        $is_local_origin = true;
+    }
+}
+
+$cors_origin = $is_local_origin ? $origin : 'http://localhost:3000';
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    header("Access-Control-Allow-Origin: $cors_origin");
+    header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    header('Access-Control-Allow-Credentials: true');
+    header('Access-Control-Max-Age: 86400');
+    exit(0);
+}
+
+// Set CORS headers for all requests
+header("Access-Control-Allow-Origin: $cors_origin");
+header('Access-Control-Allow-Methods: POST, GET, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
+header('Access-Control-Allow-Credentials: true');
+
 require __DIR__.'/../vendor/autoload.php';
 
 include_once __DIR__ . '/../include/config.php';
