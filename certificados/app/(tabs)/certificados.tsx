@@ -154,20 +154,7 @@ const CertificadosScreen = () => {
         console.log('⚠️ Error obteniendo configuración del servidor para registros:', serverConfigError.message);
       }
       
-      // Fallback a configuración local si no se pudo obtener del servidor
-      if (!baseUrl) {
-        try {
-          const configModule = require('../config/api.json');
-          if (configModule?.gate?.baseUrl) {
-            baseUrl = configModule.gate.baseUrl;
-            console.log('📱 Usando configuración local para registros:', baseUrl);
-          }
-        } catch (configError) {
-          console.log('⚠️ Error obteniendo configuración local para registros:', configError.message);
-        }
-      }
-      
-      // Último fallback
+      // Fallback: usar el origen de la ventana (dominio actual del servidor)
       if (!baseUrl) {
         baseUrl = window.location.origin;
         console.log('🔧 Usando origen de la ventana como fallback para registros:', baseUrl);

@@ -107,13 +107,21 @@ const BiometriaScreen = () => {
 
   const loadApiConfig = async () => {
     try {
-      // En React Native, usar require para archivos locales
-      const configModule = require('../../config/api.json');
-      setApiBaseUrl(configModule?.gate?.baseUrl || 'https://access-control-test.identifica.ai');
+      // Intentar cargar configuración del servidor
+      const response = await fetch('/config/api.json');
+      if (response.ok) {
+        const config = await response.json();
+        if (config?.subdomain) {
+          setApiBaseUrl(`https://${config.subdomain}`);
+          return;
+        }
+      }
     } catch (error) {
       console.error('Error loading API config:', error);
-      // Fallback to default
-      setApiBaseUrl('https://access-control-test.identifica.ai');
+    }
+    // Fallback: usar el origen de la ventana (dominio actual)
+    if (typeof window !== 'undefined') {
+      setApiBaseUrl(window.location.origin);
     }
   };
 
@@ -272,20 +280,27 @@ const BiometriaScreen = () => {
 
   const submitBiometricData = async (imageBase64, rut) => {
     try {
-      // Usar URL base predeterminada o configurada
-      let baseUrl = 'https://access-control-test.identifica.ai';
+      // Usar URL base del estado o fallback al origen de la ventana
+      let baseUrl = apiBaseUrl || (typeof window !== 'undefined' ? window.location.origin : '');
       let postEventEndpoint = '/detect/services/postEvent.php';
 
-      // Intentar cargar configuración
-      try {
-        // En React Native necesitamos importar la configuración de forma diferente
-        const configModule = require('../../config/api.json');
-        if (configModule?.gate?.baseUrl) {
-          baseUrl = configModule.gate.baseUrl;
-          postEventEndpoint = configModule.gate.endpoints?.postEvent || postEventEndpoint;
+      // Si no hay baseUrl configurado, intentar cargar del servidor
+      if (!baseUrl) {
+        try {
+          const response = await fetch('/config/api.json');
+          if (response.ok) {
+            const config = await response.json();
+            if (config?.subdomain) {
+              baseUrl = `https://${config.subdomain}`;
+            }
+          }
+        } catch (configError) {
+          console.log('Using window origin as fallback:', configError.message);
         }
-      } catch (configError) {
-        console.log('Using default config:', configError.message);
+        // Último fallback
+        if (!baseUrl && typeof window !== 'undefined') {
+          baseUrl = window.location.origin;
+        }
       }
 
       const postEventUrl = `${baseUrl}${postEventEndpoint}`;

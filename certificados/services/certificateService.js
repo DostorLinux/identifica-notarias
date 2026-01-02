@@ -36,20 +36,7 @@ export const generateCertificatePDF = async (biometricRecord, operatorRut = null
       console.log('⚠️ Error obteniendo configuración del servidor:', serverConfigError.message);
     }
     
-    // Fallback a configuración local si no se pudo obtener del servidor
-    if (!baseUrl) {
-      try {
-        const configModule = require('../config/api.json');
-        if (configModule?.gate?.baseUrl) {
-          baseUrl = configModule.gate.baseUrl;
-          console.log('📱 Usando configuración local:', baseUrl);
-        }
-      } catch (configError) {
-        console.log('⚠️ Error obteniendo configuración local:', configError.message);
-      }
-    }
-    
-    // Último fallback
+    // Fallback: usar el origen de la ventana (dominio actual del servidor)
     if (!baseUrl) {
       baseUrl = window.location.origin;
       console.log('🔧 Usando origen de la ventana como fallback:', baseUrl);
@@ -182,20 +169,7 @@ const getPhotoEvidence = async (biometricRecord) => {
       console.log('⚠️ Error obteniendo configuración del servidor para evidencia:', serverConfigError.message);
     }
     
-    // Fallback a configuración local si no se pudo obtener del servidor
-    if (!baseUrl) {
-      try {
-        const configModule = require('../config/api.json');
-        if (configModule?.gate?.baseUrl) {
-          baseUrl = configModule.gate.baseUrl;
-          console.log('📱 Usando configuración local para evidencia:', baseUrl);
-        }
-      } catch (configError) {
-        console.log('⚠️ Error obteniendo configuración local para evidencia:', configError.message);
-      }
-    }
-    
-    // Último fallback
+    // Fallback: usar el origen de la ventana (dominio actual del servidor)
     if (!baseUrl) {
       baseUrl = window.location.origin;
       console.log('🔧 Usando origen de la ventana como fallback para evidencia:', baseUrl);
